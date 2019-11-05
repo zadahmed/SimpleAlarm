@@ -48,19 +48,18 @@ PROCESS_THREAD(fire_detector_process, ev, data)
 		etimer_reset(&timer);
 	}
 
- 
-  PROCESS_END();
+ 	PROCESS_END();
 }
 
-PROCESS_THREAD(notification_process , ev , data){
+		PROCESS_THREAD(notification_process , ev , data){
 
-	PROCESS_BEGIN();
-	while(1)
-	{
-	PROCESS_WAIT_EVENT_UNTIL(ev == notification_event_ready);
-	printf("Fire Detected = %u\n", data);
-	leds_on(LEDS_ALL);
-	}
-	leds_off(LEDS_ALL);
-	PROCESS_END();
-}
+			PROCESS_BEGIN();
+			while(1)
+			{
+			PROCESS_WAIT_EVENT_UNTIL(ev == notification_event_ready);
+			printf("Fire Detected , Temperature - %d\n", data);
+			leds_on(LEDS_ALL);
+			}
+			leds_off(LEDS_ALL);
+			PROCESS_END();
+		}
