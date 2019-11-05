@@ -3,16 +3,22 @@
 #include <stdio.h> 
 #include "dev/light-sensor.h"
 #include "dev/sht11-sensor.h"
-/*---------------------------------------------------------------------------*/
-PROCESS(hello_world_process, "Hello world process");
-AUTOSTART_PROCESSES(&hello_world_process);
 
-static struct etimer timer;
+
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(hello_world_process, ev, data)
+
+static process_event_t notification_event_ready;
+PROCESS(fire_detector_process, "Fire Detector process");
+PROCESS(notification_process, "Notification Process");
+AUTOSTART_PROCESSES(&fire_detector_process , &notification_process);
+
+
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(fire_detector_process, ev, data)
 {
-  PROCESS_BEGIN();
-
+	static struct etimer timer;
+ 	PROCESS_BEGIN();
+	notification_event_ready = process_alloc_event();
 	etimer_set(&timer, CLOCK_CONF_SECOND/4); 
 	SENSORS_ACTIVATE(light_sensor);
 	SENSORS_ACTIVATE(sht11_sensor);
@@ -21,9 +27,9 @@ PROCESS_THREAD(hello_world_process, ev, data)
 		
 		PROCESS_WAIT_EVENT_UNTIL(ev=PROCESS_EVENT_TIMER); 
 
-		float light_sensor_value = 1.5 * light_sensor.value(LIGHT_SENSOR_PHOTOSYNTHETIC)/4096;
-		float I = light_sensor_value/100000;
-		float light_lx = 0.625*1e6*I*1000;
+		double light_sensor_value = 1.5 * light_sensor.value(LIGHT_SENSOR_PHOTOSYNTHETIC)/4096;
+		double I = light_sensor_value/100000;
+		double light_lx = 0.625*1e6*I*1000;
 
 		int temp_sensor_value = sht11_sensor.value(SHT11_SENSOR_TEMP);
 		int temperature =  0.01*temp_sensor_value - 39.6 ;
@@ -31,16 +37,30 @@ PROCESS_THREAD(hello_world_process, ev, data)
 		printf("Light Sensor %d\n",light_lx);
 		printf("Temp Sensor %d\n", temperature);
 
-		if(temperature > 28 ){
-		printf("Alarm");
-		leds_on(LEDS_ALL);
+		if(temperature >= 47  ){
+
+		process_post(&notification_process, notification_event_ready, &temperature);
+		
+
 		}
 	
-		leds_off(LEDS_ALL);
+		
 		etimer_reset(&timer);
 	}
 
-  
-
+ 
   PROCESS_END();
+}
+
+PROCESS_THREAD(notification_process , ev , data){
+
+	PROCESS_BEGIN();
+	while(1)
+	{
+	PROCESS_WAIT_EVENT_UNTIL(ev == notification_event_ready);
+	printf("Fire Detected = %u\n", data);
+	leds_on(LEDS_ALL);
+	}
+	leds_off(LEDS_ALL);
+	PROCESS_END();
 }
