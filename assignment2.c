@@ -73,6 +73,8 @@ return stddev;
 
 	while(1){
 		int i;
+		int j;
+		int l;
 		float stddev;
 		int stds;
 		int temp_sensor_value = sht11_sensor.value(SHT11_SENSOR_TEMP);
@@ -87,23 +89,36 @@ return stddev;
     		}
 
 		for(i=0; i <Buffer_SIZE; i++){
+
 		printf("\nBuffer Elements %d", Buffer[i]);
+
 		stddev = standard_deviation(Buffer);
 		stds = (int)stddev;
 		int k = (stddev - stds) * 10000;
 		printf("\nStandard Deviation = %d.%d", stds , k);
-		}
-		
+
 		if(stds < 30){ //low activity
 			// No interesting activity occured
+			for(j=0; j< Buffer_SIZE ; j+=4){
+				for(l=j; l<=4; l++){
+				printf("\nEvery four numbers %d",Buffer[l]);
+			}
+			}
 			
 		}
 		else if( stds > 30 && stds < 200){ //High activity
-				
+				for(j=0; j< Buffer_SIZE ; j+=2){
+				for(l=j; l<=2; l++){
+				printf("\nEvery two numbers %d",Buffer[l]);
+			}
+			}
 		}
 		else if( stds > 200) { // Extremely high activity
 			// No Aggregation
 		}
+		}
+		
+		
 	}
 	
 	
