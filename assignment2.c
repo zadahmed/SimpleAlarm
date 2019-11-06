@@ -1,85 +1,87 @@
 #include "contiki.h"
-#include "contiki-conf.h"
 #include <stdio.h> 
-#include "ringbuf.h"
 #include "dev/sht11-sensor.h"
-
+#include <stdlib.h>
 /*---------------------------------------------------------------------------*/
 PROCESS(fifo_process, "FIFO process");
 AUTOSTART_PROCESSES(&fifo_process);
-/*---------------------------------------------------------------------------*/
+
+
+int Buffer_Size = 4;
+int *CircBuffer;
+int Head = -1;
+int Tail = -1;
+int isfull_flag = 0;
+
 PROCESS_THREAD(fifo_process, ev, data)
 {
 	PROCESS_BEGIN();
 
 
-	typedef struct {
-	    uint8_t * const buffer;
-	    int head;
-	    int tail;
-	    const int maxlen;
-	} circ_bbuf_t;
+	void pushtoBuffer(int data){
 
-
-	int circ_bbuf_push(circ_bbuf_t *c, uint8_t data)
-	{
-	    int next;
-
-	    next = c->head + 1;  // next is where head will point to after this write.
-	    if (next >= c->maxlen)
-		next = 0;
-
-	    if (next == c->tail)  // if the head + 1 == tail, circular buffer is full
-		return -1;
-
-	    c->buffer[c->head] = data;  // Load data and then move
-	    c->head = next;             // head to next data offset.
-	    return 0;  // return success to indicate successful push.
+	if((Tail == Buffer_Size -1 && Head == 0)||(Tail + 1 == Head)){
+		printf("\n Buffer is Full");
+	}
+	if(Tail == Buffer_Size -1){
+		Tail = 0;
+	}
+	else {
+		Tail++;
+		CircBuffer[Tail] = data;
+		printf("\n Write to buffer : %d" , CircBuffer[Tail]);
+		if(Head == -1){
+			Head = 0;		
+		}
+	}
 	}
 
-	int circ_bbuf_pop(circ_bbuf_t *c, uint8_t *data)
-	{
-	    int next;
-
-	    if (c->head == c->tail)  // if the head == tail, we don't have any data
-		return -1;
-
-	    next = c->tail + 1;  // next is where tail will point to after this read.
-	    if(next >= c->maxlen)
-		next = 0;
-
-	    *data = c->buffer[c->tail];  // Read data and then move
-	    c->tail = next;              // tail to next offset.
-	    return 0;  // return success to indicate successful push.
-	}
-
-	             
-	  
-	CIRC_BBUF_DEF(my_circ_buf, 32);
-
- 	//struct ringbuf *buffer;
-	//uint8_t *data;
-
-  	//ringbuf_init(buffer, data , 64);
-	//SENSORS_ACTIVATE(sht11_sensor);
-
-	//while(1){
+	void popfromBuffer(){
 		
-	//	int temp_sensor_value = sht11_sensor.value(SHT11_SENSOR_TEMP);
-	//	int temperature =  0.01*temp_sensor_value - 39.6 ;
-	//	uint8_t y = temperature;
-	//	printf("Temperature is = %d\n", y);
-	//	ringbuf_put(buffer , y);
+		if(Head == -1){
+			printf("Circular queue is empty");
+		}
+		data = CircBuffer[Head];
+		printf("\n Item popping= %d",data);
+		CircBuffer[Head] = 0;
+		if(Head == Tail){
+			Head = Tail = -1;		
+		}
+		else{
+			if(Head == Buffer_Size-1){
+			Head = 0;
+			}
+			else
+			{		
+				Head++;
+			}
+			printf("\nDeleted Item = %d",data);
+		
+		}
+	}
 
-	//	int buffersize = ringbuf_size(buffer);
-	//	int getbuffer = ringbuf_get(buffer);
-	//	printf("Buffer Size is %d\n",buffersize);
-	//	printf("Buffer Element is %d\n",getbuffer);
+	void printBuffer(){
+	int i;
+	printf("\n Circular Buffer Elements \n");
+		for( i=0; i<Buffer_Size; i++){
+			printf("%d\t", CircBuffer[i]);
+		}
+	
+	}
 
-	//}
-
+	
+	
+	pushtoBuffer(30);
+	printf(" Head = %d Tail = %d" , Head, Tail);
+	pushtoBuffer(40);
+	printf(" Head = %d Tail = %d" , Head, Tail);
+	popfromBuffer();
+	printf(" Head = %d Tail = %d" , Head, Tail);
+	pushtoBuffer(60);
+	printf(" Head = %d Tail = %d" , Head, Tail);
+	printBuffer();
 
  	PROCESS_END();
 }
 
-	
+
